@@ -53,7 +53,7 @@ def createUrl():
             url = "https://genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
 
     except dbus.exceptions.DBusException:
-        
+
         print("Spotify is not running.")
 
     return url
@@ -81,5 +81,3 @@ def main():
 if __name__ == "__main__":
 
     main()
-
-
