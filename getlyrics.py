@@ -53,13 +53,16 @@ def createUrl():
             url = "https://genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
 
     except dbus.exceptions.DBusException:
+        
         print("Spotify is not running.")
 
     return url
 
 # Main
 def main():
+
     try:
+
         while True:
 
             url = createUrl()
@@ -70,7 +73,9 @@ def main():
                 lyrics(url)
 
             time.sleep(1)
+
     except KeyboardInterrupt:
+
         pass
 
 if __name__ == "__main__":
