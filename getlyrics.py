@@ -59,17 +59,19 @@ def createUrl():
 
 # Main
 def main():
+    try:
+        while True:
 
-    while True:
+            url = createUrl()
 
-        url = createUrl()
+            if url != oldUrl:
 
-        if url != oldUrl:
+                system('clear')
+                lyrics(url)
 
-            system('clear')
-            lyrics(url)
-
-        time.sleep(1)
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
 
 if __name__ == "__main__":
 
