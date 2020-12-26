@@ -15,10 +15,11 @@ http = urllib3.PoolManager() # Something something
 def urlify(text):
 
     deUmlaut = unidecode.unidecode(text) # Remove umlauts
-    addAnd = deUmlaut.replace("&","and") # Genius wants these as text
+    removeRemastered = re.sub("\((.*)| - (.*)", "",deUmlaut) # Remove hopefully unnecessary information from the title
+    addAnd = re.sub("&","and", removeRemastered) # Genius wants these as text
     deSpecial = re.sub("[^a-zA-Z0-9 \n]", '', addAnd) # Remove special characters such as dots, brackets, etc
-    addLines = deSpecial.replace(" ", "-") # Replace spaces with lines
-    removeDuplicateLines = addLines.replace("--","-") # Gets rid of possible duplicate lines
+    addLines = re.sub(" ", "-", deSpecial) # Replace spaces with lines
+    removeDuplicateLines = re.sub("--","-", addLines) # Gets rid of possible duplicate lines
     removeTrailingLine = removeDuplicateLines.rstrip('-') # Gets rid of possible trailing lines
 
     return removeTrailingLine
