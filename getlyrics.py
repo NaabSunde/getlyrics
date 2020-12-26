@@ -29,15 +29,15 @@ def lyrics(url):
 
     global oldUrl
     condition = True
+    print(url) # Prints the URL for the user
 
     while condition: # Sometimes Genius won't load up the page correctly, so we'll load the page as many times as necessary
 
         page = http.request('GET',url)
         soup = BeautifulSoup (page.data, 'html.parser')
         condition = soup.find("div", {"id": "lyrics"}) is not None
-        time.sleep(0.5)
+        time.sleep(0.1)
 
-    print(page._request_url) # Prints the URL for the user
     print(soup.p.get_text()) # Prints the lyrics
     oldUrl = url # Set oldUrl as current url so that we don't reload the same lyrics
 
@@ -51,7 +51,7 @@ def createUrl():
             spotify_properties = dbus.Interface(spotify_bus,"org.freedesktop.DBus.Properties") # Get properties
             metadata = spotify_properties.Get("org.mpris.MediaPlayer2.Player", "Metadata") # Get metadata
             url = "https://genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
-            
+
     except dbus.exceptions.DBusException:
         print("Spotify is not running.")
 
