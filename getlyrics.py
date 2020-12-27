@@ -33,16 +33,15 @@ def lyrics(url):
     global oldUrl
     condition = True
     filepath = cache + "/" + url.removeprefix("https://www.genius.com/")
-    print(filepath)
     print(url) # Prints the URL for the user
 
-    if path.isfile(filepath):
+    if path.isfile(filepath): # We won't reaload the same lyrics if they're already stored in cache
 
         file = open(filepath)
         contents = file.read()
         print(contents)
 
-    else:
+    else: # We'll have to load the lyrics if we haven't done it to this particular song yet
 
         while condition: # Sometimes Genius won't load up the page correctly, so we'll load the page as many times as necessary
 
@@ -52,8 +51,8 @@ def lyrics(url):
             time.sleep(0.1)
 
         print(soup.p.get_text()) # Prints the lyrics
-        file = open(filepath, "w+")
-        file.write(soup.p.get_text())
+        file = open(filepath, "w+") # Makes and opens a file
+        file.write(soup.p.get_text()) # Writes the lyrics to the file
 
     oldUrl = url # Set oldUrl as current url so that we don't reload the same lyrics
 
