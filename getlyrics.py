@@ -55,6 +55,7 @@ def createUrl():
     except dbus.exceptions.DBusException:
 
         print("Spotify is not running.")
+        exit(1)
 
     return url
 
