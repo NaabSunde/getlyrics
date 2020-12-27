@@ -25,15 +25,15 @@ def urlify(text):
     addLines = re.sub(" ", "-", deSpecial) # Replace spaces with lines
     removeDuplicateLines = re.sub("--","-", addLines) # Gets rid of possible duplicate lines
     removeTrailingLine = removeDuplicateLines.rstrip('-') # Gets rid of possible trailing lines
-
-    return removeTrailingLine + "-lyrics"
+    return removeTrailingLine.lower() + "-lyrics"
 
 # Gets the lyrics from Genius or from the HDD.
 def lyrics(url):
 
     global oldUrl
     condition = True
-    filepath = cache + "/" + url.strip('https://www.genius.com/') + "ics"
+    filepath = cache + "/" + url.removeprefix("https://www.genius.com/")
+    print(filepath)
     print(url) # Prints the URL for the user
 
     if path.isfile(filepath):
@@ -66,7 +66,7 @@ def createUrl():
             spotify_bus = bus.get_object("org.mpris.MediaPlayer2.spotify","/org/mpris/MediaPlayer2") # Connect to local Spotify client
             spotify_properties = dbus.Interface(spotify_bus,"org.freedesktop.DBus.Properties") # Get properties
             metadata = spotify_properties.Get("org.mpris.MediaPlayer2.Player", "Metadata") # Get metadata
-            url = "https://genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
+            url = "https://www.genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
 
     except dbus.exceptions.DBusException:
 
