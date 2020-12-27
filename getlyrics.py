@@ -4,11 +4,14 @@ import re
 import time
 import dbus
 import unidecode
+import os
 from os import system
+from os import path
 
 bus = dbus.SessionBus()
 url = None
 oldUrl = None
+cache = '.cache/getlyrics'
 http = urllib3.PoolManager() # Something important
 
 # Do whacky stuff to text so the link has a change to work
@@ -16,29 +19,42 @@ def urlify(text):
 
     deUmlaut = unidecode.unidecode(text) # Remove umlauts
     removeRemastered = re.sub("\((.*)| - (.*)", "",deUmlaut) # Remove hopefully unnecessary information from the title
-    addAnd = re.sub("&","and", removeRemastered) # Genius wants these as text
-    deSpecial = re.sub("[^a-zA-Z0-9 \n]", '', addAnd) # Remove special characters such as dots, brackets, etc
+    replaceSlashes = re.sub("/","-",removeRemastered) # Genius wants 'AC/DC' as 'ac-dc' for some reason
+    addAnd = re.sub("&","and", replaceSlashes) # Genius wants these as text
+    deSpecial = re.sub("[^a-zA-Z0-9- \n]", "", addAnd) # Remove special characters such as dots, brackets, etc
     addLines = re.sub(" ", "-", deSpecial) # Replace spaces with lines
     removeDuplicateLines = re.sub("--","-", addLines) # Gets rid of possible duplicate lines
     removeTrailingLine = removeDuplicateLines.rstrip('-') # Gets rid of possible trailing lines
 
     return removeTrailingLine + "-lyrics"
 
-# Gets the lyrics from Genius
+# Gets the lyrics from Genius or from the HDD.
 def lyrics(url):
 
     global oldUrl
     condition = True
+    filepath = cache + "/" + url.strip('https://www.genius.com/') + "ics"
     print(url) # Prints the URL for the user
 
-    while condition: # Sometimes Genius won't load up the page correctly, so we'll load the page as many times as necessary
+    if path.isfile(filepath):
 
-        page = http.request('GET',url)
-        soup = BeautifulSoup (page.data, 'html.parser')
-        condition = soup.find("div", {"id": "lyrics"}) is not None
-        time.sleep(0.1)
+        file = open(filepath)
+        contents = file.read()
+        print(contents)
 
-    print(soup.p.get_text()) # Prints the lyrics
+    else:
+
+        while condition: # Sometimes Genius won't load up the page correctly, so we'll load the page as many times as necessary
+
+            page = http.request('GET',url)
+            soup = BeautifulSoup (page.data, 'html.parser')
+            condition = soup.find("div", {"id": "lyrics"}) is not None
+            time.sleep(0.1)
+
+        print(soup.p.get_text()) # Prints the lyrics
+        file = open(filepath, "w+")
+        file.write(soup.p.get_text())
+
     oldUrl = url # Set oldUrl as current url so that we don't reload the same lyrics
 
 
@@ -62,6 +78,8 @@ def createUrl():
 # Main
 def main():
 
+    if not os.path.exists(cache):
+        os.makedirs(cache)
     try:
 
         while True:
