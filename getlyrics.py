@@ -5,6 +5,7 @@ import time
 import dbus
 import unidecode
 import os
+import sys
 from os import system
 from os import path
 
@@ -23,7 +24,7 @@ def urlify(text):
     addAnd = re.sub("&","and", replaceSlashes) # Genius wants these as text
     deSpecial = re.sub("[^a-zA-Z0-9- \n]", "", addAnd) # Remove special characters such as dots, brackets, etc
     addLines = re.sub(" ", "-", deSpecial) # Replace spaces with lines
-    removeDuplicateLines = re.sub("--","-", addLines) # Gets rid of possible duplicate lines
+    removeDuplicateLines = re.sub("---|--","-", addLines) # Gets rid of possible duplicate lines
     removeTrailingLine = removeDuplicateLines.rstrip('-') # Gets rid of possible trailing lines
     return removeTrailingLine.lower() + "-lyrics"
 
@@ -33,16 +34,15 @@ def lyrics(url):
     global oldUrl
     condition = True
     filepath = cache + "/" + url.removeprefix("https://www.genius.com/")
-    print(url) # Prints the URL for the user
 
     if path.isfile(filepath): # We won't reaload the same lyrics if they're already stored in cache
-
+        print(f"Loaded lyrics from {filepath} \n")
         file = open(filepath)
         contents = file.read()
         print(contents)
 
     else: # We'll have to load the lyrics if we haven't done it to this particular song yet
-
+        print(f"Loading lyrics from {url} \n")
         while condition: # Sometimes Genius won't load up the page correctly, so we'll load the page as many times as necessary
 
             page = http.request('GET',url)
@@ -66,7 +66,7 @@ def createUrl():
             spotify_properties = dbus.Interface(spotify_bus,"org.freedesktop.DBus.Properties") # Get properties
             metadata = spotify_properties.Get("org.mpris.MediaPlayer2.Player", "Metadata") # Get metadata
             url = "https://www.genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
-
+            sys.stdout.write("\33]0;%s - %s\a" % (metadata.get('xesam:artist')[0], metadata.get('xesam:title'))) # Change the terminal title to 'Artist - Title'
     except dbus.exceptions.DBusException:
 
         print("Spotify is not running.")
@@ -77,6 +77,7 @@ def createUrl():
 # Main
 def main():
 
+    
     if not os.path.exists(cache):
         os.makedirs(cache)
     try:
