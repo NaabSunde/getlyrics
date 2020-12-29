@@ -42,6 +42,7 @@ def lyrics(url):
         file = open(filepath)
         contents = file.read()
         print(contents)
+        file.close()
 
     else: # We'll have to load the lyrics if we haven't done it to this particular song yet
 
@@ -63,7 +64,8 @@ def lyrics(url):
 
         print(soup.p.get_text()) # Prints the lyrics
         file = open(filepath, "w+") # Makes and opens a file
-        file.write(soup.p.get_text()) # Writes the lyrics to the file   
+        file.write(soup.p.get_text()) # Writes the lyrics to the file
+        file.close()
 
 
 # Creates the URL with the help of urlify
