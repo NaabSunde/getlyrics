@@ -1,3 +1,4 @@
+#!/usr/bin/env python   
 from bs4 import BeautifulSoup
 import urllib3
 import re
@@ -12,21 +13,22 @@ from os import path
 bus = dbus.SessionBus()
 url = None
 oldUrl = None
-cache = '.cache/getlyrics'
+player = None
+cache = os.path.expanduser('~/.cache/getlyrics')
 http = urllib3.PoolManager() # Something important
 
 # Do whacky stuff to text so the link has a change to work
 def urlify(text):
 
-    deUmlaut = unidecode.unidecode(text) # Remove umlauts
-    removeRemastered = re.sub("\((.*)| - (.*)", "",deUmlaut) # Remove hopefully unnecessary information from the title
-    replaceSlashes = re.sub("/","-",removeRemastered) # Genius wants 'AC/DC' as 'ac-dc' for some reason
-    addAnd = re.sub("&","and", replaceSlashes) # Genius wants these as text
-    deSpecial = re.sub("[^a-zA-Z0-9- \n]", "", addAnd) # Remove special characters such as dots, brackets, etc
-    addLines = re.sub(" ", "-", deSpecial) # Replace spaces with lines
-    removeDuplicateLines = re.sub("---|--","-", addLines) # Gets rid of possible duplicate lines
-    removeTrailingLine = removeDuplicateLines.rstrip('-') # Gets rid of possible trailing lines
-    return removeTrailingLine.lower() + "-lyrics"
+    de_umlaut = unidecode.unidecode(text) # Remove umlauts
+    remove_remastered = re.sub("\((.*)| - (.*)", "",de_umlaut) # Remove hopefully unnecessary information from the title
+    replace_slashes = re.sub("/","-",remove_remastered) # Genius wants 'AC/DC' as 'ac-dc' for some reason
+    add_and = re.sub("&","and", replace_slashes) # Genius wants these as text
+    despecial = re.sub("[^a-zA-Z0-9- \n]", "", add_and) # Remove special characters such as dots, brackets, etc
+    add_lines = re.sub(" ", "-", despecial) # Replace spaces with lines
+    remove_duplicate_lines = re.sub("---|--","-", add_lines) # Gets rid of possible duplicate lines
+    remove_trailing_line = remove_duplicate_lines.rstrip('-') # Gets rid of possible trailing lines
+    return remove_trailing_line.lower() + "-lyrics"
 
 # Gets the lyrics from Genius or from the HDD.
 def lyrics(url):
@@ -50,10 +52,10 @@ def lyrics(url):
 
         while condition: # Sometimes Genius won't load up the page correctly, so we'll load the page as many times as necessary
 
-            if hasSongChanged() == True: # This is my half-ass attempt to load the correct lyrics if the user has changed the song while Genius is acting up 
+            if has_song_changed() == True: # This is my half-ass attempt to load the correct lyrics if the user has changed the song while Genius is acting up 
                 
                 system('clear')
-                url = createUrl()
+                url = create_url()
                 oldUrl = url
                 print(f"Song has changed, loading lyrics from {url} \n")
                 
@@ -69,27 +71,69 @@ def lyrics(url):
 
 
 # Creates the URL with the help of urlify
-def createUrl():
+def create_url():
+
+    global player
 
     try:
-
-            spotify_bus = bus.get_object("org.mpris.MediaPlayer2.spotify","/org/mpris/MediaPlayer2") # Connect to local Spotify client
-            spotify_properties = dbus.Interface(spotify_bus,"org.freedesktop.DBus.Properties") # Get properties
-            metadata = spotify_properties.Get("org.mpris.MediaPlayer2.Player", "Metadata") # Get metadata
+            
+            player_bus = bus.get_object(player,"/org/mpris/MediaPlayer2") # Connect to local music player
+            player_properties = dbus.Interface(player_bus,"org.freedesktop.DBus.Properties") # Get properties
+            metadata = player_properties.Get("org.mpris.MediaPlayer2.Player", "Metadata") # Get metadata
             url = "https://www.genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
             sys.stdout.write("\33]0;%s - %s\a" % (metadata.get('xesam:artist')[0], metadata.get('xesam:title'))) # Change the terminal title to 'Artist - Title'
 
     except dbus.exceptions.DBusException:
 
-        print("Spotify is not running.")
+        print(f"{player} is not running.")
         exit(1)
 
     return url
 
-# Function to check wheter the song has changed
-def hasSongChanged():
+# Function to get all MPRIS players. Returns a list of 
+def get_players():
 
-    url = createUrl()
+    services = bus.list_names() # Get all services
+    players = []
+
+    for i in services:
+
+        if "org.mpris.MediaPlayer2" in i:
+
+            players.append(i) # Create a list of MPRIS-mediaplayers
+
+    return players
+
+# Function to ask the user for the desired player. Writes it to the global variable 'player'
+def ask_which_player():
+
+    global player
+    user_input = int(-1)
+    players = get_players()
+
+    print("Welcome to getlyrics!")
+    
+    if len(players) == 0:
+        
+        print("No player is running")
+        exit(1)
+
+    for i in range(len(players)):
+
+        print(f"{i}. {players[i]}")
+
+    while (user_input < 0) or (len(players) -1 < user_input ):
+
+        print("Please input the number of the desired player")
+        user_input = int(input())
+
+    player = players[user_input]
+
+
+# Function to check wheter the song has changed
+def has_song_changed():
+
+    url = create_url()
 
     if url != oldUrl:
         
@@ -100,18 +144,36 @@ def hasSongChanged():
 # Main
 def main():
 
-    
+    global player
+
     if not os.path.exists(cache): # If cache folder does not exist..
+
         os.makedirs(cache) # then create it
+
+    if(len(sys.argv)) == 1: # If an argument was not given we'll ask from the user
+
+        ask_which_player()
+
+    else:
+
+        x = "org.mpris.MediaPlayer2."+str(sys.argv[1])
+        if x in get_players():
+
+            player = x
+
+        else:
+
+            print("Incorrect player given as argument.")
+            exit(1)
 
     try:
 
         while True:
 
-            if hasSongChanged() == True:
+            if has_song_changed():
 
                 system('clear')
-                lyrics(createUrl())
+                lyrics(create_url())
 
             time.sleep(1)
 
