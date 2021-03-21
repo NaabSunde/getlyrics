@@ -118,6 +118,11 @@ def ask_which_player():
         print("No player is running")
         exit(1)
 
+    if len(players) == 1:
+        
+        player = players[0]
+        return
+
     for i in range(len(players)):
 
         print(f"{i}. {players[i]}")
