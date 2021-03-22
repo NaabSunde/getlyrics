@@ -24,9 +24,9 @@ def urlify(text):
     remove_remastered = re.sub("\((.*)| - (.*)", "",de_umlaut) # Remove hopefully unnecessary information from the title
     replace_slashes = re.sub("/","-",remove_remastered) # Genius wants 'AC/DC' as 'ac-dc' for some reason
     add_and = re.sub("&","and", replace_slashes) # Genius wants these as text
-    despecial = re.sub("[^a-zA-Z0-9- \n]", "", add_and) # Remove special characters such as dots, brackets, etc
+    despecial = re.sub("[^a-zA-Z0-9- \n]", "-", add_and) # Remove special characters such as dots, brackets, etc
     add_lines = re.sub(" ", "-", despecial) # Replace spaces with lines
-    remove_duplicate_lines = re.sub("---|--","-", add_lines) # Gets rid of possible duplicate lines
+    remove_duplicate_lines = re.sub("-+","-", add_lines) # Gets rid of possible duplicate lines
     remove_trailing_line = remove_duplicate_lines.rstrip('-') # Gets rid of possible trailing lines
     return remove_trailing_line.lower() + "-lyrics"
 
@@ -80,8 +80,13 @@ def create_url():
             player_bus = bus.get_object(player,"/org/mpris/MediaPlayer2") # Connect to local music player
             player_properties = dbus.Interface(player_bus,"org.freedesktop.DBus.Properties") # Get properties
             metadata = player_properties.Get("org.mpris.MediaPlayer2.Player", "Metadata") # Get metadata
-            url = "https://www.genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
-            sys.stdout.write("\33]0;%s - %s\a" % (metadata.get('xesam:artist')[0], metadata.get('xesam:title'))) # Change the terminal title to 'Artist - Title'
+            try:
+                url = "https://www.genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
+                sys.stdout.write("\33]0;%s - %s\a" % (metadata.get('xesam:artist')[0], metadata.get('xesam:title'))) # Change the terminal title to 'Artist - Title'
+            except IndexError:
+                print(f"Something happened to the metadata.")
+                exit(1)
+
 
     except dbus.exceptions.DBusException:
 
