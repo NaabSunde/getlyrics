@@ -80,17 +80,22 @@ def create_url():
             player_bus = bus.get_object(player,"/org/mpris/MediaPlayer2") # Connect to local music player
             player_properties = dbus.Interface(player_bus,"org.freedesktop.DBus.Properties") # Get properties
             metadata = player_properties.Get("org.mpris.MediaPlayer2.Player", "Metadata") # Get metadata
+
             try:
+
                 url = "https://www.genius.com/" + urlify(metadata.get('xesam:artist')[0] + " " + metadata.get('xesam:title')) # Create the URL
                 sys.stdout.write("\33]0;%s - %s\a" % (metadata.get('xesam:artist')[0], metadata.get('xesam:title'))) # Change the terminal title to 'Artist - Title'
+            
             except IndexError:
+
                 print(f"Something happened to the metadata.")
                 exit(1)
 
 
     except dbus.exceptions.DBusException:
 
-        print(f"{player} is not running.")
+        name = player.rsplit(".")[-1]
+        print(f"{name} is not running.")
         exit(1)
 
     return url
@@ -130,14 +135,14 @@ def ask_which_player():
 
     for i in range(len(players)):
 
-        print(f"{i}. {players[i]}")
+        print(f"{i + 1} {players[i]}")
 
-    while (user_input < 0) or (len(players) -1 < user_input ):
+    while (user_input < 1) or (len(players) < user_input ):
 
         print("Please input the number of the desired player")
         user_input = int(input())
 
-    player = players[user_input]
+    player = players[user_input - 1]
 
 
 # Function to check wheter the song has changed
@@ -167,6 +172,7 @@ def main():
     else:
 
         x = "org.mpris.MediaPlayer2."+str(sys.argv[1])
+        
         if x in get_players():
 
             player = x
@@ -179,7 +185,7 @@ def main():
     try:
 
         while True:
-
+            
             if has_song_changed():
 
                 system('clear')
