@@ -8,17 +8,18 @@ import unidecode
 import argparse
 import sys
 import os
+import logging
 from os import system
 from os import path
 
 bus = dbus.SessionBus()
 no_cache = False
-silent = False
 url = None
 oldUrl = None
 player = None
 cache = os.path.expanduser('~/.cache/getlyrics')
 http = urllib3.PoolManager() # Something important
+logger = logging.getLogger("getlyrics.py")
 
 def urlify(artist, track):
     """Do whacky stuff to text so the link has a change to work.
@@ -51,7 +52,7 @@ def lyrics(url):
 
     if (no_cache == False and path.isfile(filepath)): # We won't reload the same lyrics if they're already stored in cache
 
-        printer(f"Loaded lyrics from {filepath} \n")
+        logger.info("Loaded lyrics from %s", filepath)
         file = open(filepath)
         contents = file.read()
         print(contents)
@@ -59,7 +60,7 @@ def lyrics(url):
 
     else: # We'll have to load the lyrics if we haven't done it to this particular song yet
 
-        printer(f"Loading lyrics from {url} \n")
+        logger.info("Loading lyrics from %s", url)
 
         while condition: # Sometimes Genius won't load up the page correctly, so we'll load the page as many times as necessary
 
@@ -68,7 +69,7 @@ def lyrics(url):
                 system('clear')
                 url = create_url()
                 oldUrl = url
-                print(f"Song has changed, loading lyrics from {url} \n")
+                logger.info("Song has changed, loading lyrics from %s", url)
                 
             page = http.request('GET',url)
             soup = BeautifulSoup (page.data, 'html.parser')
@@ -79,12 +80,6 @@ def lyrics(url):
         file = open(filepath, "w+") # Makes and opens a file
         file.write(soup.p.get_text()) # Writes the lyrics to the file
         file.close()
-
-# Small printer to check verbosity
-def printer(text):
-    if(not silent):
-        print(text)
-
 
 # Creates the URL with the help of urlify
 def create_url():
@@ -104,7 +99,7 @@ def create_url():
             
             except IndexError:
 
-                print(f"Something happened to the metadata.")
+                print("Something happened to the metadata.")
                 exit(1)
 
 
@@ -137,7 +132,7 @@ def ask_which_player():
     user_input = int(-1)
     players = get_players()
 
-    printer("Welcome to getlyrics!")
+    logger.info("Welcome to getlyrics!")
     
     if len(players) == 0:
         
@@ -147,6 +142,7 @@ def ask_which_player():
     if len(players) == 1:
         
         player = players[0]
+        logger.debug("Player is %s", player)
         return
 
     for i in range(len(players)):
@@ -164,6 +160,8 @@ def ask_which_player():
 # Function to check whether the song has changed
 def has_song_changed():
 
+    logger.debug("Checking if song has changed")
+
     url = create_url()
 
     if url != oldUrl:
@@ -176,16 +174,31 @@ def setup():
 
     global player
     global no_cache
-    global silent
 
     parser = argparse.ArgumentParser(prog='getlyrics.py', description='Get lyrics delivered to your terminal!')
     parser.add_argument("--player", "-p", help="The MPRIS player which getlyrics should listen to. It will be asked from the user if there are multiple players.")
     parser.add_argument("--no-cache", "-c", help="Flag to not use cache feature.", action="store_true")
     parser.add_argument("--silent", "-s", help="Print only lyrics", action="store_true")
+    parser.add_argument("--debug", "-d", help="Print a whole lot", action="store_true")
     parser.add_argument("--test", "-t", help="Run doctest", action="store_true")
     args = parser.parse_args()
     no_cache = args.no_cache
-    silent = args.silent
+
+    # Logging
+
+
+    loglevel = logging.INFO # We're verbose by default
+    logformat='%(message)s' # Default format is just the message
+
+    if (args.silent):
+        loglevel = logging.WARNING # Silence!
+
+    if (args.debug):
+        loglevel = logging.DEBUG # Overrides silent
+        logformat = '%(asctime)s %(levelname)s:%(message)s' # Time, loglevel and message
+
+    logging.basicConfig(level=loglevel, format=logformat)
+
     
     if (not os.path.exists(cache) and no_cache == False): # If cache folder does not exist..
 
@@ -193,8 +206,12 @@ def setup():
 
     if (args.test):
 
+        logger.info("Running doctests...")
+
         import doctest
         doctest.testmod()
+
+        logger.info("Doctests ran.")
 
         exit(0)
 
@@ -226,8 +243,10 @@ def main():
     try:
 
         while True:
-            
+
             if has_song_changed():
+
+                logger.debug("Song has changed")
 
                 system('clear')
                 lyrics(create_url())
