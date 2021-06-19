@@ -20,8 +20,14 @@ player = None
 cache = os.path.expanduser('~/.cache/getlyrics')
 http = urllib3.PoolManager() # Something important
 
-# Do whacky stuff to text so the link has a change to work
 def urlify(artist, track):
+    """Do whacky stuff to text so the link has a change to work.
+
+    >>> urlify("Bryan Adams", "Heaven")
+    'bryan-adams-heaven-lyrics'
+    >>> urlify("Dancin (feat. Luvli) - Krono Remix", "Aaron Smith")
+    'aaron-smith-dancin-krono-remix-lyrics'
+    """
 
     remove_dots_from_artist = re.sub("[.]", "", artist) # Some artists have names such as "t.A.t.U", Genius wants these as "tatu"
     text = remove_dots_from_artist + "-" + track
@@ -176,6 +182,7 @@ def setup():
     parser.add_argument("--player", "-p", help="The MPRIS player which getlyrics should listen to. It will be asked from the user if there are multiple players.")
     parser.add_argument("--no-cache", "-c", help="Flag to not use cache feature.", action="store_true")
     parser.add_argument("--silent", "-s", help="Print only lyrics", action="store_true")
+    parser.add_argument("--test", "-t", help="Run doctest", action="store_true")
     args = parser.parse_args()
     no_cache = args.no_cache
     silent = args.silent
@@ -183,6 +190,14 @@ def setup():
     if (not os.path.exists(cache) and no_cache == False): # If cache folder does not exist..
 
         os.makedirs(cache) # then create it
+
+    if (args.test):
+
+        import doctest
+        doctest.testmod()
+
+        exit(0)
+
 
     if(args.player == None): # If an argument was not given we'll ask from the user
 
